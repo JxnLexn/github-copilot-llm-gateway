@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { GatewayClient } from './client';
 import { GatewayConfig, OpenAIChatCompletionRequest } from './types';
 
+const VALID_JSON_SCHEMA_TYPES = new Set(['string', 'number', 'integer', 'boolean', 'array', 'object', 'null']);
+
 /**
  * Language model provider for OpenAI-compatible inference servers
  */
@@ -193,7 +195,6 @@ export class GatewayProvider implements vscode.LanguageModelChatProvider {
 
     if (typeof sanitized.properties === 'object' && sanitized.properties !== null && !Array.isArray(sanitized.properties)) {
       const normalizedProperties: Record<string, unknown> = {};
-      const validTypes = new Set(['string', 'number', 'integer', 'boolean', 'array', 'object', 'null']);
 
       for (const [propertyName, propertySchema] of Object.entries(sanitized.properties as Record<string, unknown>)) {
         if (propertySchema && typeof propertySchema === 'object' && !Array.isArray(propertySchema)) {
@@ -202,24 +203,29 @@ export class GatewayProvider implements vscode.LanguageModelChatProvider {
         }
 
         if (typeof propertySchema === 'string') {
-          normalizedProperties[propertyName] = validTypes.has(propertySchema)
+          normalizedProperties[propertyName] = VALID_JSON_SCHEMA_TYPES.has(propertySchema)
             ? { type: propertySchema }
             : { type: 'string', description: propertySchema };
           continue;
         }
 
         if (typeof propertySchema === 'number') {
-          normalizedProperties[propertyName] = { type: 'number', default: propertySchema };
+          normalizedProperties[propertyName] = { type: 'number' };
           continue;
         }
 
         if (typeof propertySchema === 'boolean') {
-          normalizedProperties[propertyName] = { type: 'boolean', default: propertySchema };
+          normalizedProperties[propertyName] = { type: 'boolean' };
           continue;
         }
 
         if (Array.isArray(propertySchema)) {
-          normalizedProperties[propertyName] = { type: 'array', default: propertySchema };
+          normalizedProperties[propertyName] = { type: 'array' };
+          continue;
+        }
+
+        if (propertySchema === null) {
+          normalizedProperties[propertyName] = { type: 'null' };
           continue;
         }
 
