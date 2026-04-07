@@ -2,14 +2,14 @@
   "name": "github-copilot-llm-gateway",
   "displayName": "GitHub Copilot LLM Gateway",
   "description": "Connect GitHub Copilot to open-source models via vLLM or any OpenAI-compatible server",
-  "version": "1.0.0",
-  "publisher": "AndrewButson",
+  "version": "1.1.0",
+  "publisher": "JxnLexn",
   "icon": "assets/copilot-llm-gateway.png",
   "private": true,
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/arbs-io/github-copilot-llm-gateway.git"
+    "url": "https://github.com/jxnlexn/github-copilot-llm-gateway.git"
   },
   "sponsor": {
     "url": "https://github.com/sponsors/arbs-io"
