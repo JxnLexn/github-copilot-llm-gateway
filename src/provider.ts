@@ -141,7 +141,7 @@ export class GatewayProvider implements vscode.LanguageModelChatProvider {
         function: {
           name: tool.name,
           description: tool.description,
-          parameters: tool.inputSchema,
+          parameters: this.sanitizeToolSchema(tool.inputSchema),
         },
       }));
 
@@ -152,6 +152,52 @@ export class GatewayProvider implements vscode.LanguageModelChatProvider {
       requestOptions.parallel_tool_calls = this.config.parallelToolCalling;
       this.outputChannel.appendLine(`Sending ${requestOptions.tools.length} tools to model (parallel: ${this.config.parallelToolCalling})`);
     }
+  }
+
+  /**
+   * Sanitize JSON schema for OpenAI function parameters compatibility.
+   * Adds fallback types for missing/null `type` fields and recursively sanitizes nested schemas.
+   */
+  private sanitizeToolSchema(
+    schema: unknown,
+    visited: WeakMap<object, unknown> = new WeakMap()
+  ): unknown {
+    if (schema === null || schema === undefined) {
+      return schema;
+    }
+
+    if (typeof schema !== 'object') {
+      return schema;
+    }
+
+    if (visited.has(schema)) {
+      return visited.get(schema);
+    }
+
+    if (Array.isArray(schema)) {
+      const sanitizedArray: unknown[] = [];
+      visited.set(schema, sanitizedArray);
+      for (const item of schema) {
+        sanitizedArray.push(this.sanitizeToolSchema(item, visited));
+      }
+      return sanitizedArray;
+    }
+
+    const source = schema as Record<string, unknown>;
+    const sanitized: Record<string, unknown> = {};
+    visited.set(schema, sanitized);
+
+    for (const [key, value] of Object.entries(source)) {
+      sanitized[key] = this.sanitizeToolSchema(value, visited);
+    }
+
+    if (sanitized.type === null || sanitized.type === undefined) {
+      const hasProperties = typeof sanitized.properties === 'object' && sanitized.properties !== null && !Array.isArray(sanitized.properties);
+      const hasItems = sanitized.items !== null && sanitized.items !== undefined;
+      sanitized.type = hasProperties ? 'object' : hasItems ? 'array' : 'string';
+    }
+
+    return sanitized;
   }
 
   /**
@@ -549,7 +595,7 @@ export class GatewayProvider implements vscode.LanguageModelChatProvider {
       this.outputChannel.appendLine(`Tool: ${tool.name}`);
       this.outputChannel.appendLine(`  Description: ${tool.description?.substring(0, 100) || 'none'}...`);
 
-      const schema = tool.inputSchema as Record<string, unknown> | undefined;
+      const schema = this.sanitizeToolSchema(tool.inputSchema) as Record<string, unknown> | undefined;
       this.currentToolSchemas.set(tool.name, schema);
 
       if (schema?.required && Array.isArray(schema.required)) {
@@ -558,7 +604,7 @@ export class GatewayProvider implements vscode.LanguageModelChatProvider {
 
       return {
         type: 'function',
-        function: { name: tool.name, description: tool.description, parameters: tool.inputSchema },
+        function: { name: tool.name, description: tool.description, parameters: schema },
       };
     });
   }
