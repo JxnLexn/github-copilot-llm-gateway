@@ -106,6 +106,9 @@ export class GatewayClient {
       finalizedIndices: new Set<number>(),
       requestId: `req_${Date.now()}_${randomBytes(4).toString('hex')}`,
       toolCallCounter: 0,
+      handleSSEError: (error: Error) => {
+        console.error('SSE stream error:', error);
+      },
     };
   }
 
