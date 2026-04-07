@@ -3,6 +3,9 @@ import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 
 export default [
+  {
+    ignores: ['out/**', 'node_modules/**'],
+  },
   eslint.configs.recommended,
   {
     files: ['**/*.ts'],
@@ -17,11 +20,14 @@ export default [
       '@typescript-eslint': tseslint,
     },
     rules: {
-      '@typescript-eslint/naming-convention': ['warn', { 'format': 'camelCase', 'leadingUnderscore': 'allow', 'trailingUnderscore': 'allow' }],
-      '@typescript-eslint/semi': ['warn', 'always'],
+      'no-undef': 'off',
       'curly': 'warn',
       'eqeqeq': 'warn',
       'no-throw-literal': 'warn',
-      'semi': 'off',
+      'semi': ['warn', 'always'],
       'prefer-const': 'warn',
-      'no-unused-vars':
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    },
+  },
+];

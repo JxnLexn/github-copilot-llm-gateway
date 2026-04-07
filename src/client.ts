@@ -101,11 +101,16 @@ export class GatewayClient {
    * Create initial tool call tracking state
    */
   private createToolCallState(): ToolCallState {
+    const requestId = `req_${Date.now()}_${randomBytes(4).toString('hex')}`;
+
     return {
       toolCallsByIndex: new Map<number, StreamingToolCall>(),
       finalizedIndices: new Set<number>(),
-      requestId: `req_${Date.now()}_${randomBytes(4).toString('hex')}`,
+      requestId,
       toolCallCounter: 0,
+      handleSSEError: (error: Error) => {
+        console.error(`[${requestId}] SSE stream error:`, error);
+      },
     };
   }
 
