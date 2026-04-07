@@ -3,9 +3,12 @@ import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 
 export default [
+  {
+    ignores: ['out/**', 'node_modules/**'],
+  },
   eslint.configs.recommended,
   {
-    files: ['**/*.ts'],
+    files: ['src/**/*.ts'],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
@@ -17,7 +20,7 @@ export default [
       '@typescript-eslint': tseslint,
     },
     rules: {
-      '@typescript-eslint/naming-convention': ['warn', { format: ['camelCase'], leadingUnderscore: 'allow', trailingUnderscore: 'allow' }],
+      'no-undef': 'off',
       'curly': 'warn',
       'eqeqeq': 'warn',
       'no-throw-literal': 'warn',
