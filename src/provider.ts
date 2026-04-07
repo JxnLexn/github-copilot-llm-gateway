@@ -191,6 +191,44 @@ export class GatewayProvider implements vscode.LanguageModelChatProvider {
       sanitized[key] = this.sanitizeToolSchema(value, visited);
     }
 
+    if (typeof sanitized.properties === 'object' && sanitized.properties !== null && !Array.isArray(sanitized.properties)) {
+      const normalizedProperties: Record<string, unknown> = {};
+      const validTypes = new Set(['string', 'number', 'integer', 'boolean', 'array', 'object', 'null']);
+
+      for (const [propertyName, propertySchema] of Object.entries(sanitized.properties as Record<string, unknown>)) {
+        if (propertySchema && typeof propertySchema === 'object' && !Array.isArray(propertySchema)) {
+          normalizedProperties[propertyName] = propertySchema;
+          continue;
+        }
+
+        if (typeof propertySchema === 'string') {
+          normalizedProperties[propertyName] = validTypes.has(propertySchema)
+            ? { type: propertySchema }
+            : { type: 'string', description: propertySchema };
+          continue;
+        }
+
+        if (typeof propertySchema === 'number') {
+          normalizedProperties[propertyName] = { type: 'number', default: propertySchema };
+          continue;
+        }
+
+        if (typeof propertySchema === 'boolean') {
+          normalizedProperties[propertyName] = { type: 'boolean', default: propertySchema };
+          continue;
+        }
+
+        if (Array.isArray(propertySchema)) {
+          normalizedProperties[propertyName] = { type: 'array', default: propertySchema };
+          continue;
+        }
+
+        normalizedProperties[propertyName] = { type: 'string' };
+      }
+
+      sanitized.properties = normalizedProperties;
+    }
+
     if (sanitized.type === null || sanitized.type === undefined) {
       const hasProperties = typeof sanitized.properties === 'object' && sanitized.properties !== null && !Array.isArray(sanitized.properties);
       const hasItems = sanitized.items !== null && sanitized.items !== undefined;
