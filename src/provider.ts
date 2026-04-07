@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { GatewayClient } from './client';
 import { GatewayConfig, OpenAIChatCompletionRequest } from './types';
 
+const VALID_JSON_SCHEMA_TYPES = new Set(['string', 'number', 'integer', 'boolean', 'array', 'object', 'null']);
+
 /**
  * Language model provider for OpenAI-compatible inference servers
  */
@@ -189,6 +191,48 @@ export class GatewayProvider implements vscode.LanguageModelChatProvider {
 
     for (const [key, value] of Object.entries(source)) {
       sanitized[key] = this.sanitizeToolSchema(value, visited);
+    }
+
+    if (typeof sanitized.properties === 'object' && sanitized.properties !== null && !Array.isArray(sanitized.properties)) {
+      const normalizedProperties: Record<string, unknown> = {};
+
+      for (const [propertyName, propertySchema] of Object.entries(sanitized.properties as Record<string, unknown>)) {
+        if (propertySchema && typeof propertySchema === 'object' && !Array.isArray(propertySchema)) {
+          normalizedProperties[propertyName] = propertySchema;
+          continue;
+        }
+
+        if (typeof propertySchema === 'string') {
+          normalizedProperties[propertyName] = VALID_JSON_SCHEMA_TYPES.has(propertySchema)
+            ? { type: propertySchema }
+            : { type: 'string', description: propertySchema };
+          continue;
+        }
+
+        if (typeof propertySchema === 'number') {
+          normalizedProperties[propertyName] = { type: 'number' };
+          continue;
+        }
+
+        if (typeof propertySchema === 'boolean') {
+          normalizedProperties[propertyName] = { type: 'boolean' };
+          continue;
+        }
+
+        if (Array.isArray(propertySchema)) {
+          normalizedProperties[propertyName] = { type: 'array' };
+          continue;
+        }
+
+        if (propertySchema === null) {
+          normalizedProperties[propertyName] = { type: 'null' };
+          continue;
+        }
+
+        normalizedProperties[propertyName] = { type: 'string' };
+      }
+
+      sanitized.properties = normalizedProperties;
     }
 
     if (sanitized.type === null || sanitized.type === undefined) {
